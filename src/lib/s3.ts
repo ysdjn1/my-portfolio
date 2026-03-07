@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 const accountId = "3ba6c7562643b4dea2d6ed3214f76aea"; // Extracted from endpoint
 const endpoint = process.env.S3_ENDPOINT || `https://${accountId}.r2.cloudflarestorage.com`;
@@ -15,6 +15,36 @@ export const s3Client = new S3Client({
         secretAccessKey: secretAccessKey,
     },
 });
+
+/**
+ * Deletes a file from Cloudflare R2.
+ * @param fileUrl The public URL of the file to delete
+ */
+export async function deleteFromR2(fileUrl: string): Promise<void> {
+    if (!fileUrl) return;
+
+    try {
+        // Extract the key from the URL.
+        // E.g., https://pub-xxx.r2.dev/originals/123.mp4 -> originals/123.mp4
+        const urlObj = new URL(fileUrl);
+        // pathname usually starts with a slash, so slice it off
+        const key = urlObj.pathname.slice(1);
+        
+        if (!key) return;
+
+        const command = new DeleteObjectCommand({
+            Bucket: bucketName,
+            Key: key,
+        });
+
+        await s3Client.send(command);
+        console.log(`Successfully deleted ${key} from R2`);
+    } catch (error) {
+        console.error(`Error deleting from R2 (${fileUrl}):`, error);
+        // We might not want to throw here if we are deleting multiple files
+        // and one fails, but let's log it.
+    }
+}
 
 /**
  * Uploads a file buffer to Cloudflare R2.

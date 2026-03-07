@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X, ExternalLink, Heart, Share2, Loader2 } from 'lucide-react';
+import { X, ExternalLink, Heart, Share2, Loader2, Trash2, Eye, EyeOff } from 'lucide-react';
 import { WorkItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +13,9 @@ export function DetailModal() {
     const [isOpen, setIsOpen] = useState(false);
     const [work, setWork] = useState<WorkItem | null>(null);
     const [loading, setLoading] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
+    const [toggling, setToggling] = useState(false);
 
     // Sync state with URL Param
     useEffect(() => {
@@ -46,6 +49,61 @@ export function DetailModal() {
         setIsOpen(false);
         // Remove query param shallowly
         router.push('/', { scroll: false });
+    };
+
+    const handleToggleVisibility = async () => {
+        if (!workId || !work) return;
+
+        setToggling(true);
+        try {
+            const res = await fetch(`/api/works/${workId}/visibility`, {
+                method: 'PATCH',
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                // Update local work state to reflect new visibility immediately
+                setWork({ ...work, isPublic: data.isPublic });
+                // Force router to refresh so the background grid updates without full page reload
+                router.refresh();
+            } else {
+                alert('表示ステータスの切り替えに失敗しました');
+            }
+        } catch (err) {
+            console.error('Failed to toggle visibility:', err);
+            alert('エラーが発生しました');
+        } finally {
+            setToggling(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!workId) return;
+        
+        const confirmed = window.confirm('本当にこの動画を削除しますか？\n（サムネイルや動画ファイルも完全に削除されます）');
+        if (!confirmed) return;
+
+        setDeleting(true);
+        try {
+            const res = await fetch(`/api/works/${workId}`, {
+                method: 'DELETE',
+            });
+
+            if (res.ok) {
+                // Close modal and refresh the current page to update the grid
+                setIsOpen(false);
+                router.push('/', { scroll: false });
+                router.refresh();
+            } else {
+                const data = await res.json();
+                alert(`削除に失敗しました: ${data.error || '不明なエラー'}`);
+            }
+        } catch (error) {
+            console.error('Failed to delete work:', error);
+            alert('削除処理中にエラーが発生しました');
+        } finally {
+            setDeleting(false);
+        }
     };
 
     if (!workId || !isOpen) return null;
@@ -140,10 +198,42 @@ export function DetailModal() {
                                 </div>
                             )}
 
-                            <button className="w-full py-3 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
-                                <Share2 size={20} />
-                                Share
-                            </button>
+                            <div className="flex gap-2">
+                                <button className="flex-1 py-3 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
+                                    <Share2 size={20} />
+                                    Share
+                                </button>
+                                
+                                <button 
+                                    onClick={handleToggleVisibility}
+                                    disabled={toggling}
+                                    className={cn(
+                                        "px-4 py-3 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50",
+                                        work.isPublic 
+                                            ? "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20" 
+                                            : "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20"
+                                    )}
+                                    title={work.isPublic ? "Make Private" : "Make Public"}
+                                >
+                                    {toggling ? (
+                                        <Loader2 size={20} className="animate-spin" />
+                                    ) : work.isPublic ? (
+                                        <Eye size={20} />
+                                    ) : (
+                                        <EyeOff size={20} />
+                                    )}
+                                    <span className="hidden sm:inline">{work.isPublic ? "Public" : "Private"}</span>
+                                </button>
+
+                                <button 
+                                    onClick={handleDelete}
+                                    disabled={deleting}
+                                    className="px-4 py-3 bg-red-500/10 text-red-500 font-bold rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                    title="Delete Video"
+                                >
+                                    {deleting ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} />}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

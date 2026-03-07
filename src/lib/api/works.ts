@@ -1,12 +1,11 @@
 import { GridItem, WorkItem } from '@/lib/types';
 import { sql } from '@vercel/postgres';
 
-export async function getWorks(): Promise<GridItem[]> {
+export async function getWorks(includePrivate = false): Promise<GridItem[]> {
     try {
-        const { rows } = await sql`
-            SELECT * FROM works
-            ORDER BY created_at DESC
-        `;
+        const { rows } = includePrivate 
+            ? await sql`SELECT * FROM works ORDER BY created_at DESC`
+            : await sql`SELECT * FROM works WHERE is_public = TRUE OR is_public IS NULL ORDER BY created_at DESC`;
         
         return rows.map(row => ({
             id: row.id,
@@ -17,6 +16,7 @@ export async function getWorks(): Promise<GridItem[]> {
             originalVideoUrl: row.original_video_url,
             platform: row.platform,
             aspectRatio: row.aspect_ratio,
+            isPublic: row.is_public ?? true,
         } as WorkItem));
     } catch (error) {
         console.error('Failed to fetch works from DB:', error);
@@ -44,6 +44,7 @@ export async function getWorkById(id: string): Promise<WorkItem | null> {
             originalVideoUrl: row.original_video_url,
             platform: row.platform,
             aspectRatio: row.aspect_ratio,
+            isPublic: row.is_public ?? true,
         } as WorkItem;
     } catch (error) {
         console.error('Failed to fetch work by ID:', error);

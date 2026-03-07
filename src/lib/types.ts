@@ -11,6 +11,7 @@ export type WorkItem = BaseItem & {
   originalVideoUrl?: string; // MP4 Original
   platform?: 'tiktok' | 'instagram' | 'youtube';
   views?: string;
+  isPublic?: boolean;
 };
 
 export type AdItem = BaseItem & {
