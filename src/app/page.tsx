@@ -12,10 +12,10 @@ export default async function Home() {
     <main className="min-h-screen bg-black text-white p-4 md:p-8">
       <header className="mb-12 text-center">
         <h1 className="text-3xl md:text-5xl font-bold tracking-tighter mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">
-          Junichi's Archive
+          A secret collection of cute girls
         </h1>
         <p className="text-gray-400 max-w-lg mx-auto">
-          A collection of short-form video content across TikTok, Instagram, and YouTube.
+          A collection of short video content spanning TikTok, Instagram, and other platforms.
         </p>
       </header>
 
