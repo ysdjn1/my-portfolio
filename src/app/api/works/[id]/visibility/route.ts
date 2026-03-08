@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { sql } from '@vercel/postgres';
 
 export async function PATCH(
@@ -27,6 +28,10 @@ export async function PATCH(
         const newVisibility = rows[0].is_public;
         
         console.log(`Successfully toggled work ID: ${id} visibility to ${newVisibility}.`);
+
+        // Force Vercel/Next.js to clear cache for both the homepage grid and the admin grid
+        revalidatePath('/');
+        revalidatePath('/admin/upload');
 
         return NextResponse.json({ success: true, isPublic: newVisibility });
 

@@ -4,6 +4,8 @@ import { DetailModal } from '@/components/modal/DetailModal';
 import { getWorks } from '@/lib/api/works';
 import { Suspense } from 'react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function UploadPage() {
     // Fetch all works, including private ones, directly from the database
     const works = await getWorks(true);

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getWorkById } from '@/lib/api/works';
 import { sql } from '@vercel/postgres';
 import { deleteFromR2 } from '@/lib/s3';
@@ -65,7 +66,11 @@ export async function DELETE(
             WHERE id = ${id}
         `;
         
-        console.log(`Successfully deleted work ID: ${id} from database.`);
+        console.log(`Successfully deleted work ID: ${id} from DB and R2.`);
+
+        // Force cache invalidation to instantly update the UI in production
+        revalidatePath('/');
+        revalidatePath('/admin/upload');
 
         return NextResponse.json({ success: true });
 
