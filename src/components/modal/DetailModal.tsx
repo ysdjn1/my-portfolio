@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { X, ExternalLink, Heart, Share2, Loader2, Trash2, Eye, EyeOff } from 'lucide-react';
 import { WorkItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -9,7 +9,9 @@ import { cn } from '@/lib/utils';
 export function DetailModal() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const pathname = usePathname();
     const workId = searchParams.get('workId');
+    const isAdminUser = pathname?.startsWith('/admin');
     const [isOpen, setIsOpen] = useState(false);
     const [work, setWork] = useState<WorkItem | null>(null);
     const [loading, setLoading] = useState(false);
@@ -48,7 +50,7 @@ export function DetailModal() {
     const handleClose = () => {
         setIsOpen(false);
         // Remove query param shallowly
-        router.push('/', { scroll: false });
+        router.push(pathname || '/', { scroll: false });
     };
 
     const handleToggleVisibility = async () => {
@@ -92,7 +94,7 @@ export function DetailModal() {
             if (res.ok) {
                 // Close modal and refresh the current page to update the grid
                 setIsOpen(false);
-                router.push('/', { scroll: false });
+                router.push(pathname || '/', { scroll: false });
                 router.refresh();
             } else {
                 const data = await res.json();
@@ -204,35 +206,39 @@ export function DetailModal() {
                                     Share
                                 </button>
                                 
-                                <button 
-                                    onClick={handleToggleVisibility}
-                                    disabled={toggling}
-                                    className={cn(
-                                        "px-4 py-3 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50",
-                                        work.isPublic 
-                                            ? "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20" 
-                                            : "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20"
-                                    )}
-                                    title={work.isPublic ? "Make Private" : "Make Public"}
-                                >
-                                    {toggling ? (
-                                        <Loader2 size={20} className="animate-spin" />
-                                    ) : work.isPublic ? (
-                                        <Eye size={20} />
-                                    ) : (
-                                        <EyeOff size={20} />
-                                    )}
-                                    <span className="hidden sm:inline">{work.isPublic ? "Public" : "Private"}</span>
-                                </button>
+                                {isAdminUser && (
+                                    <>
+                                        <button 
+                                            onClick={handleToggleVisibility}
+                                            disabled={toggling}
+                                            className={cn(
+                                                "px-4 py-3 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50",
+                                                work.isPublic 
+                                                    ? "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20" 
+                                                    : "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20"
+                                            )}
+                                            title={work.isPublic ? "Make Private" : "Make Public"}
+                                        >
+                                            {toggling ? (
+                                                <Loader2 size={20} className="animate-spin" />
+                                            ) : work.isPublic ? (
+                                                <Eye size={20} />
+                                            ) : (
+                                                <EyeOff size={20} />
+                                            )}
+                                            <span className="hidden sm:inline">{work.isPublic ? "Public" : "Private"}</span>
+                                        </button>
 
-                                <button 
-                                    onClick={handleDelete}
-                                    disabled={deleting}
-                                    className="px-4 py-3 bg-red-500/10 text-red-500 font-bold rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                                    title="Delete Video"
-                                >
-                                    {deleting ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} />}
-                                </button>
+                                        <button 
+                                            onClick={handleDelete}
+                                            disabled={deleting}
+                                            className="px-4 py-3 bg-red-500/10 text-red-500 font-bold rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                            title="Delete Video"
+                                        >
+                                            {deleting ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} />}
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
