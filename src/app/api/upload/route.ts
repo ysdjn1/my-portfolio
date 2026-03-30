@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
         const file = formData.get('file') as File | null;
+        const externalUrl = formData.get('externalUrl') as string | null;
 
         if (!file) {
             return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
@@ -24,27 +25,39 @@ export async function POST(request: NextRequest) {
         console.log('Uploading original to R2...', originalFilename);
         const r2OriginalUrl = await uploadToR2(buffer, `originals/${originalFilename}`, file.type || 'video/mp4');
 
-        // 2. We still need a local file for ffmpeg to process.
-        // Save to a temporary directory.
-        const tmpDir = path.join(process.cwd(), '.temp');
-        if (!fs.existsSync(tmpDir)) {
-            fs.mkdirSync(tmpDir, { recursive: true });
+        let result: { thumbnailPath: string, previewPath: string };
+
+        if (file.type === 'image/gif' || originalFilename.toLowerCase().endsWith('.gif')) {
+            // Bypass FFmpeg for GIFs, use the original GIF for thumbnail and preview
+            console.log('GIF detected, bypassing FFmpeg');
+            result = {
+                thumbnailPath: r2OriginalUrl,
+                previewPath: r2OriginalUrl
+            };
+        } else {
+            // 2. We still need a local file for ffmpeg to process.
+            // Save to a temporary directory.
+            const tmpDir = path.join(process.cwd(), '.temp');
+            if (!fs.existsSync(tmpDir)) {
+                fs.mkdirSync(tmpDir, { recursive: true });
+            }
+            
+            const tempFilePath = path.join(tmpDir, originalFilename);
+            await writeFile(tempFilePath, buffer);
+            console.log('Temporary original file saved:', tempFilePath);
+
+            // 3. Process video (this will also upload thumbnails/previews to R2 and clean them up)
+            result = await processVideo(tempFilePath, fileId);
+
+            // 4. Clean up temporary original video
+            fs.unlinkSync(tempFilePath);
         }
-        
-        const tempFilePath = path.join(tmpDir, originalFilename);
-        await writeFile(tempFilePath, buffer);
-        console.log('Temporary original file saved:', tempFilePath);
-
-        // 3. Process video (this will also upload thumbnails/previews to R2 and clean them up)
-        const result = await processVideo(tempFilePath, fileId);
-
-        // 4. Clean up temporary original video
-        fs.unlinkSync(tempFilePath);
 
         // 5. Add to Postgres database so it appears on the homepage Grid
+        // 5. Add to Postgres database so it appears on the homepage Grid
         await sql`
-            INSERT INTO works (id, title, thumbnail_url, preview_url, original_video_url, platform, aspect_ratio)
-            VALUES (${fileId}, 'New Upload', ${result.thumbnailPath}, ${result.previewPath}, ${r2OriginalUrl}, 'tiktok', 0.5625)
+            INSERT INTO works (id, title, thumbnail_url, preview_url, original_video_url, platform, aspect_ratio, external_url)
+            VALUES (${fileId}, 'New Upload', ${result.thumbnailPath}, ${result.previewPath}, ${r2OriginalUrl}, 'tiktok', 0.5625, ${externalUrl || null})
         `;
 
         return NextResponse.json({

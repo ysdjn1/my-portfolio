@@ -2,7 +2,7 @@
 
 import { WorkItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Play } from 'lucide-react';
+import { Play, Link as LinkIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 
@@ -18,13 +18,22 @@ export function WorkCard({ work, className, priority = false }: WorkCardProps) {
     const [isHovered, setIsHovered] = useState(false);
     const router = useRouter();
 
+    const isExternal = !!work.externalUrl;
+
     const handleClick = () => {
-        router.push(`/?workId=${work.id}`, { scroll: false });
+        if (!isExternal) {
+            router.push(`/?workId=${work.id}`, { scroll: false });
+        }
     };
 
+    const Container = isExternal ? 'a' : 'div';
+    const containerProps = isExternal 
+        ? { href: work.externalUrl, target: "_blank", rel: "noopener noreferrer" }
+        : { onClick: handleClick };
+
     return (
-        <div
-            onClick={handleClick}
+        <Container
+            {...containerProps}
             className={cn(
                 "relative rounded-xl overflow-hidden cursor-pointer group break-inside-avoid mb-4",
                 "transform transition-transform duration-300 hover:scale-[1.02]",
@@ -39,6 +48,14 @@ export function WorkCard({ work, className, priority = false }: WorkCardProps) {
                 style={{ paddingBottom: `${(1 / work.aspectRatio) * 100}%` }}
                 className="relative w-full bg-gray-800"
             >
+                {/* External Link Badge */}
+                {isExternal && (
+                    <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 z-10 shadow-lg">
+                        <LinkIcon size={12} className="text-white"/> 
+                        <span className="text-xs text-white font-medium shadow-sm">Fan Site</span>
+                    </div>
+                )}
+
                 {/* Thumbnail Image */}
                 <Image
                     src={work.thumbnailUrl}
@@ -80,6 +97,6 @@ export function WorkCard({ work, className, priority = false }: WorkCardProps) {
                     <p className="text-white/60 text-xs capitalize mt-0.5">{work.platform}</p>
                 </div>
             </div>
-        </div>
+        </Container>
     );
 }

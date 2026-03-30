@@ -12,6 +12,7 @@ export type WorkItem = BaseItem & {
   platform?: 'tiktok' | 'instagram' | 'youtube';
   views?: string;
   isPublic?: boolean;
+  externalUrl?: string; // Optional link to external site
 };
 
 export type AdItem = BaseItem & {

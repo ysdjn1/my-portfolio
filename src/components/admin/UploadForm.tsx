@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 export function UploadForm() {
     const router = useRouter();
     const [file, setFile] = useState<File | null>(null);
+    const [externalUrl, setExternalUrl] = useState('');
     const [uploading, setUploading] = useState(false);
     const [result, setResult] = useState<any>(null);
 
@@ -22,6 +23,9 @@ export function UploadForm() {
         setUploading(true);
         const formData = new FormData();
         formData.append('file', file);
+        if (externalUrl.trim()) {
+            formData.append('externalUrl', externalUrl.trim());
+        }
 
         try {
             const res = await fetch('/api/upload', {
@@ -37,8 +41,9 @@ export function UploadForm() {
             // Refresh the server component to show the newly uploaded video in the list below
             router.refresh();
             
-            // Clear file input
+            // Clear inputs
             setFile(null);
+            setExternalUrl('');
             const input = document.getElementById('video-upload-input') as HTMLInputElement;
             if (input) input.value = '';
 
@@ -54,18 +59,30 @@ export function UploadForm() {
         <div className="space-y-6">
             <h2 className="text-2xl font-bold">Upload Video</h2>
             <p className="text-gray-400">
-                Upload an MP4 video. The server will automatically generate:
+                Upload an MP4 video or GIF image. For MP4, the server will automatically generate:
             </p>
-            <ul className="list-disc list-inside text-gray-400 ml-4">
+            <ul className="list-disc list-inside text-gray-400 ml-4 mb-6">
                 <li>A generic thumbnail (at 0s)</li>
                 <li>An animated WebP preview (0-5s cutoff)</li>
             </ul>
 
-            <div className="border border-dashed border-gray-700 rounded-xl p-8 flex flex-col items-center gap-4 bg-gray-900/50">
+            <div className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">External Link URL (Optional)</label>
+                    <input
+                        type="url"
+                        value={externalUrl}
+                        onChange={(e) => setExternalUrl(e.target.value)}
+                        placeholder="https://example.com"
+                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-colors"
+                    />
+                </div>
+
+                <div className="border border-dashed border-gray-700 rounded-xl p-8 flex flex-col items-center gap-4 bg-gray-900/50">
                 <input
                     id="video-upload-input"
                     type="file"
-                    accept="video/mp4"
+                    accept="video/mp4, image/gif"
                     onChange={handleFileChange}
                     className="block w-full text-sm text-gray-400
               file:mr-4 file:py-2 file:px-4
@@ -83,6 +100,7 @@ export function UploadForm() {
                     {uploading && <Loader2 className="animate-spin" />}
                     {uploading ? 'Processing...' : 'Upload & Process'}
                 </button>
+                </div>
             </div>
 
             {result && (

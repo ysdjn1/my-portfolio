@@ -147,6 +147,13 @@ export function DetailModal() {
                 {/* Left: Video Player Area */}
                 <div className="flex-1 bg-black flex items-center justify-center relative">
                     {work.originalVideoUrl ? (
+                        work.originalVideoUrl.toLowerCase().endsWith('.gif') ? (
+                            <img
+                                src={work.originalVideoUrl}
+                                alt={work.title}
+                                className="max-h-full max-w-full w-auto h-auto object-contain"
+                            />
+                        ) : (
                         <video
                             ref={(el) => {
                                 if (el) {
@@ -160,6 +167,7 @@ export function DetailModal() {
                             playsInline
                             className="max-h-full max-w-full w-auto h-auto object-contain"
                         />
+                        )
                     ) : (
                         <div className="text-center p-8">
                             <p className="text-gray-500 mb-2">Original Video Not Available</p>

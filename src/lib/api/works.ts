@@ -17,6 +17,7 @@ export async function getWorks(includePrivate = false): Promise<GridItem[]> {
             platform: row.platform,
             aspectRatio: row.aspect_ratio,
             isPublic: row.is_public ?? true,
+            externalUrl: row.external_url,
         } as WorkItem));
     } catch (error) {
         console.error('Failed to fetch works from DB:', error);
@@ -45,6 +46,7 @@ export async function getWorkById(id: string): Promise<WorkItem | null> {
             platform: row.platform,
             aspectRatio: row.aspect_ratio,
             isPublic: row.is_public ?? true,
+            externalUrl: row.external_url,
         } as WorkItem;
     } catch (error) {
         console.error('Failed to fetch work by ID:', error);
