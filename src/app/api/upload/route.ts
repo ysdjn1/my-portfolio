@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { processVideo } from '@/lib/ffmpeg';
 import path from 'path';
 import fs from 'fs';
@@ -54,11 +55,14 @@ export async function POST(request: NextRequest) {
         }
 
         // 5. Add to Postgres database so it appears on the homepage Grid
-        // 5. Add to Postgres database so it appears on the homepage Grid
         await sql`
             INSERT INTO works (id, title, thumbnail_url, preview_url, original_video_url, platform, aspect_ratio, external_url)
             VALUES (${fileId}, 'New Upload', ${result.thumbnailPath}, ${result.previewPath}, ${r2OriginalUrl}, 'tiktok', 0.5625, ${externalUrl || null})
         `;
+
+        // 6. Revalidate cache to immediately show new uploads on UI
+        revalidatePath('/');
+        revalidatePath('/admin/upload');
 
         return NextResponse.json({
             success: true,
