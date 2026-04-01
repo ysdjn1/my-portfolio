@@ -79,6 +79,8 @@ export function WorkCard({ work, className, priority = false }: WorkCardProps) {
                         ref={videoRef}
                         src={work.originalVideoUrl}
                         className="absolute inset-0 w-full h-full object-cover"
+                        controlsList="nodownload"
+                        onContextMenu={(e) => e.preventDefault()}
                         muted
                         loop
                         playsInline

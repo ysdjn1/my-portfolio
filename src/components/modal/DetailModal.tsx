@@ -162,6 +162,8 @@ export function DetailModal() {
                             }}
                             src={work.originalVideoUrl}
                             controls
+                            controlsList="nodownload"
+                            onContextMenu={(e) => e.preventDefault()}
                             autoPlay
                             loop
                             playsInline
