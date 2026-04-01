@@ -9,6 +9,7 @@ export function UploadForm() {
     const [file, setFile] = useState<File | null>(null);
     const [externalUrl, setExternalUrl] = useState('');
     const [uploading, setUploading] = useState(false);
+    const [progress, setProgress] = useState(0);
     const [result, setResult] = useState<any>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,24 +22,78 @@ export function UploadForm() {
         if (!file) return;
 
         setUploading(true);
-        const formData = new FormData();
-        formData.append('file', file);
-        if (externalUrl.trim()) {
-            formData.append('externalUrl', externalUrl.trim());
-        }
+        setProgress(0);
+        setResult(null);
 
         try {
-            const res = await fetch('/api/upload', {
+            // 1. Get presigned URL
+            const presignedRes = await fetch('/api/upload/presigned', {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filename: file.name,
+                    contentType: file.type || 'application/octet-stream',
+                })
             });
 
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Upload failed');
+            if (!presignedRes.ok) {
+                const errData = await presignedRes.json();
+                throw new Error(errData.error || 'Failed to get presigned URL');
+            }
 
-            setResult(data);
+            const { uploadUrl, publicUrl, fileId } = await presignedRes.json();
+
+            // 2. Upload directly to S3/R2 using XMLHttpRequest for progress tracking
+            await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        setProgress(percentComplete);
+                    }
+                });
+
+                xhr.addEventListener('load', () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        resolve(xhr.response);
+                    } else {
+                        reject(new Error(`Upload failed with status ${xhr.status}`));
+                    }
+                });
+
+                xhr.addEventListener('error', () => {
+                    reject(new Error('Upload failed due to network error'));
+                });
+
+                xhr.open('PUT', uploadUrl);
+                xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+                xhr.send(file);
+            });
+
+            // 3. Confirm upload and save to DB
+            const completeRes = await fetch('/api/upload/complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fileId,
+                    publicUrl,
+                    externalUrl: externalUrl.trim(),
+                })
+            });
+
+            if (!completeRes.ok) {
+                const errData = await completeRes.json();
+                throw new Error(errData.error || 'Failed to complete upload');
+            }
+
+            setResult({
+                thumbnailPath: publicUrl,
+                previewPath: publicUrl,
+                originalVideoPath: publicUrl
+            });
             
-            // Refresh the server component to show the newly uploaded video in the list below
+            setProgress(100);
             router.refresh();
             
             // Clear inputs
@@ -49,22 +104,23 @@ export function UploadForm() {
 
         } catch (error) {
             console.error(error);
-            alert('Upload failed');
+            alert('Upload failed: ' + (error instanceof Error ? error.message : String(error)));
         } finally {
             setUploading(false);
+            if (progress === 100) {
+                setTimeout(() => setProgress(0), 3000); // Clear progress bar after a few seconds on success
+            } else {
+                 setProgress(0); // clear on failure immediately
+            }
         }
     };
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Upload Video</h2>
+            <h2 className="text-2xl font-bold">Upload Media</h2>
             <p className="text-gray-400">
-                Upload an MP4 video or GIF image. For MP4, the server will automatically generate:
+                Upload a video or image. This will bypass Vercel limits by directly uploading to Cloudflare R2.
             </p>
-            <ul className="list-disc list-inside text-gray-400 ml-4 mb-6">
-                <li>A generic thumbnail (at 0s)</li>
-                <li>An animated WebP preview (0-5s cutoff)</li>
-            </ul>
 
             <div className="space-y-4">
                 <div>
@@ -82,7 +138,7 @@ export function UploadForm() {
                 <input
                     id="video-upload-input"
                     type="file"
-                    accept="video/mp4, image/gif"
+                    accept="video/mp4, image/gif, video/quicktime, video/webm"
                     onChange={handleFileChange}
                     className="block w-full text-sm text-gray-400
               file:mr-4 file:py-2 file:px-4
@@ -98,23 +154,29 @@ export function UploadForm() {
                     className="bg-white text-black px-6 py-2 rounded-full font-bold disabled:opacity-50 flex items-center gap-2"
                 >
                     {uploading && <Loader2 className="animate-spin" />}
-                    {uploading ? 'Processing...' : 'Upload & Process'}
+                    {uploading ? 'Uploading...' : 'Upload Media'}
                 </button>
                 </div>
             </div>
 
+            {progress > 0 && typeof progress === 'number' && (
+                <div className="w-full bg-gray-800 rounded-full h-4 overflow-hidden">
+                    <div 
+                        className="bg-blue-500 h-4 transition-all duration-300 ease-out" 
+                        style={{ width: `${progress}%` }} 
+                    />
+                    <div className="text-xs text-center text-gray-400 mt-1">{progress}% Complete</div>
+                </div>
+            )}
+
             {result && (
                 <div className="bg-green-900/20 border border-green-500/30 p-6 rounded-xl space-y-4">
                     <h3 className="text-xl font-bold text-green-400">Success!</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <span className="text-xs text-gray-400 block mb-1">Generated Thumbnail (JPG)</span>
-                            <img src={result.thumbnailPath} className="rounded-lg w-full" alt="Thumb" />
-                        </div>
-                        <div>
-                            <span className="text-xs text-gray-400 block mb-1">Generated Preview (WebP)</span>
-                            <img src={result.previewPath} className="rounded-lg w-full" alt="Preview" />
-                        </div>
+                    <div>
+                        <span className="text-xs text-gray-400 block mb-1">Uploaded Media URL</span>
+                        <a href={result.originalVideoPath} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline break-all">
+                            {result.originalVideoPath}
+                        </a>
                     </div>
                 </div>
             )}

@@ -16,9 +16,26 @@ interface WorkCardProps {
 
 export function WorkCard({ work, className, priority = false }: WorkCardProps) {
     const [isHovered, setIsHovered] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
     const router = useRouter();
 
     const isExternal = !!work.externalUrl;
+    const isVideo = work.originalVideoUrl?.match(/\.(mp4|webm|mov)$/i) || work.thumbnailUrl?.match(/\.(mp4|webm|mov)$/i);
+
+    const handleMouseEnter = () => {
+        setIsHovered(true);
+        if (isVideo && videoRef.current) {
+            videoRef.current.play().catch(e => console.error("Video play error:", e));
+        }
+    };
+
+    const handleMouseLeave = () => {
+        setIsHovered(false);
+        if (isVideo && videoRef.current) {
+            videoRef.current.pause();
+            videoRef.current.currentTime = 0;
+        }
+    };
 
     const handleClick = () => {
         if (!isExternal) {
@@ -40,8 +57,8 @@ export function WorkCard({ work, className, priority = false }: WorkCardProps) {
                 "bg-gray-900 border border-white/5",
                 className
             )}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
         >
             {/* Aspect Ratio Container */}
             <div
@@ -56,28 +73,26 @@ export function WorkCard({ work, className, priority = false }: WorkCardProps) {
                     </div>
                 )}
 
-                {/* Thumbnail Image */}
-                <Image
-                    src={work.thumbnailUrl}
-                    alt={work.title}
-                    fill
-                    sizes="(max-width: 768px) 50vw, 33vw"
-                    className={cn(
-                        "object-cover transition-opacity duration-500",
-                        (isHovered && work.previewUrl) ? "opacity-0" : "opacity-100"
-                    )}
-                    priority={priority}
-                />
-
-                {/* WebP Preview Layer (Instead of Video) */}
-                {work.previewUrl && (
-                    <img
-                        src={work.previewUrl}
-                        alt={`${work.title} preview`}
-                        className={cn(
-                            "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
-                            isHovered ? "opacity-100" : "opacity-0"
-                        )}
+                {/* Media Layer */}
+                {isVideo ? (
+                    <video
+                        ref={videoRef}
+                        src={work.originalVideoUrl}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                    />
+                ) : (
+                    <Image
+                        src={work.thumbnailUrl}
+                        alt={work.title}
+                        fill
+                        sizes="(max-width: 768px) 50vw, 33vw"
+                        className="object-cover transition-opacity duration-500"
+                        priority={priority}
+                        unoptimized={work.thumbnailUrl?.toLowerCase().endsWith('.gif')}
                     />
                 )}
 

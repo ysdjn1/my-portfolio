@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const accountId = "3ba6c7562643b4dea2d6ed3214f76aea"; // Extracted from endpoint
 const endpoint = process.env.S3_ENDPOINT || `https://${accountId}.r2.cloudflarestorage.com`;
@@ -76,6 +77,31 @@ export async function uploadToR2(buffer: Buffer, fileName: string, contentType: 
         return `${r2PublicDomain}/${fileName}`;
     } catch (error) {
         console.error('Error uploading to R2:', error);
+        throw error;
+    }
+}
+
+/**
+ * Generates a presigned URL for direct client upload to R2
+ * @param fileName The target file name in the bucket
+ * @param contentType The MIME type of the file
+ * @returns An object containing the presignedUploadUrl and the expected publicUrl
+ */
+export async function generatePresignedUrl(fileName: string, contentType: string): Promise<{ uploadUrl: string; publicUrl: string }> {
+    const command = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: fileName,
+        ContentType: contentType,
+    });
+
+    try {
+        const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        const r2PublicDomain = process.env.NEXT_PUBLIC_R2_DOMAIN || 'https://pub-YOUR-DEV-URL.r2.dev';
+        const publicUrl = `${r2PublicDomain}/${fileName}`;
+        
+        return { uploadUrl, publicUrl };
+    } catch (error) {
+        console.error('Error generating presigned URL:', error);
         throw error;
     }
 }
