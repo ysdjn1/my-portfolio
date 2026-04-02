@@ -25,3 +25,14 @@ export type AdItem = BaseItem & {
 };
 
 export type GridItem = WorkItem | AdItem;
+
+export type SiteSettings = {
+  id: number;
+  title: string;
+  description: string;
+  tiktokUrl: string;
+  twitterUrl: string;
+  btcAddress: string;
+  ethAddress: string;
+  solAddress: string;
+};

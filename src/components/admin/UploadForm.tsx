@@ -197,6 +197,7 @@ export function UploadForm() {
                                     <option value="YouTube">YouTube</option>
                                     <option value="X">X (Twitter)</option>
                                     <option value="Instagram">Instagram</option>
+                                    <option value="Original">Original</option>
                                     <option value="Other">その他</option>
                                 </select>
                             </div>

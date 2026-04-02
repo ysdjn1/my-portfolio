@@ -22,7 +22,7 @@ export function EditWorkModal({ work, onClose, onSuccess }: EditWorkModalProps) 
     const adData = work as AdItem;
 
     const [description, setDescription] = useState(workData.description || '');
-    const initialPlatform = ['TikTok', 'YouTube', 'X', 'Instagram'].includes(workData.platform || 'Other') 
+    const initialPlatform = ['TikTok', 'YouTube', 'X', 'Instagram', 'Original'].includes(workData.platform || 'Other') 
         ? (workData.platform || 'TikTok') 
         : 'Other';
     const [platform, setPlatform] = useState(workData.platform ? initialPlatform : 'TikTok');
@@ -163,6 +163,7 @@ export function EditWorkModal({ work, onClose, onSuccess }: EditWorkModalProps) 
                                     <option value="YouTube">YouTube</option>
                                     <option value="X">X (Twitter)</option>
                                     <option value="Instagram">Instagram</option>
+                                    <option value="Original">Original</option>
                                     <option value="Other">その他</option>
                                 </select>
                             </div>

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { X, ExternalLink, Heart, Share2, Loader2, Trash2, Eye, EyeOff } from 'lucide-react';
-import { WorkItem } from '@/lib/types';
+import { X, ExternalLink, Heart, Share2, Loader2, Trash2, Eye, EyeOff, Music2, Twitter, Coins, Copy, Check } from 'lucide-react';
+import { WorkItem, SiteSettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 export function DetailModal() {
@@ -15,6 +16,22 @@ export function DetailModal() {
     const [isOpen, setIsOpen] = useState(false);
     const [work, setWork] = useState<WorkItem | null>(null);
     const [loading, setLoading] = useState(false);
+    const [settings, setSettings] = useState<SiteSettings | null>(null);
+    const [isTippingOpen, setIsTippingOpen] = useState(false);
+    const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+
+    // Sync state with URL Param
+    useEffect(() => {
+        const fetchInitialSettings = async () => {
+            try {
+                const res = await fetch('/api/settings');
+                if (res.ok) setSettings(await res.json());
+            } catch (e) {
+                console.error('Failed to load settings:', e);
+            }
+        };
+        fetchInitialSettings();
+    }, []);
 
     // Sync state with URL Param
     useEffect(() => {
@@ -48,6 +65,16 @@ export function DetailModal() {
         setIsOpen(false);
         // Remove query param shallowly
         router.push(pathname || '/', { scroll: false });
+    };
+
+    const handleCopy = async (address: string, coin: string) => {
+        try {
+            await navigator.clipboard.writeText(address);
+            setCopiedAddress(coin);
+            setTimeout(() => setCopiedAddress(null), 2000);
+        } catch (err) {
+            console.error('Failed to copy', err);
+        }
     };
 
     const handleShare = async () => {
@@ -110,10 +137,10 @@ export function DetailModal() {
             </button>
 
             {/* Content Container */}
-            <div className="relative w-full max-w-6xl h-full max-h-[90vh] bg-gray-900 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row animate-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-6xl md:h-full max-h-[90vh] bg-gray-900 rounded-3xl overflow-y-auto md:overflow-hidden shadow-2xl flex flex-col md:flex-row animate-in zoom-in-95 duration-200">
 
                 {/* Left: Video Player Area */}
-                <div className="flex-1 bg-black flex items-center justify-center relative">
+                <div className="flex-1 bg-black flex items-center justify-center relative z-0">
                     {work.originalVideoUrl ? (
                         work.originalVideoUrl.toLowerCase().endsWith('.gif') ? (
                             <img
@@ -148,33 +175,112 @@ export function DetailModal() {
                 </div>
 
                 {/* Right: Metadata Area */}
-                <div className="w-full md:w-[400px] flex-shrink-0 bg-gray-900 border-l border-white/5 flex flex-col">
+                <div className="w-full md:w-[400px] flex-shrink-0 bg-gray-900 border-l border-white/5 flex flex-col relative z-50">
                     <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
+                        <h2 className={cn("text-2xl md:text-3xl font-bold text-white leading-tight", work.description ? "mb-2" : "mb-6")}>
                             {work.title}
                         </h2>
 
-                        <p className="text-gray-400 leading-relaxed mb-6 whitespace-pre-wrap">
-                            {work.description || 'No description available.'}
-                        </p>
+                        {work.description && (
+                            <p className="text-gray-400 leading-relaxed mb-6 whitespace-pre-wrap">
+                                {work.description}
+                            </p>
+                        )}
 
                         {/* Actions */}
                         <div className="space-y-6">
-                            {/* Platform Info */}
-                            {work.platform && (
-                                <div className="flex flex-col pb-4 border-b border-white/5">
-                                    <span className="text-xs text-gray-500 uppercase tracking-wider mb-2">Platform</span>
-                                    <div className="flex items-center justify-between group">
-                                        <span className="text-xl font-mono text-white capitalize">
-                                            {work.platform}
-                                        </span>
-                                        {work.originalUrl && (
-                                            <a href={work.originalUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-                                                <span>View original</span>
-                                                <ExternalLink size={16} className="group-hover:translate-x-1 transition-transform" />
-                                            </a>
-                                        )}
-                                    </div>
+                            {/* Info & Creator Links */}
+                            {(work.platform || settings?.tiktokUrl || settings?.twitterUrl || settings?.btcAddress || settings?.ethAddress || settings?.solAddress) && (
+                                <div className="flex flex-col pb-4 border-b border-white/5 space-y-4">
+                                    {/* Platform & SNS Row */}
+                                    {(work.platform || settings?.tiktokUrl || settings?.twitterUrl) && (
+                                        <div>
+                                            <span className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Platform & Creator</span>
+                                            <div className="flex items-center justify-between group">
+                                                <div className="flex items-center gap-3">
+                                                    {work.platform && (
+                                                        <span className="text-xl font-mono text-white capitalize">
+                                                            {work.platform}
+                                                        </span>
+                                                    )}
+                                                    <div className="flex items-center gap-2">
+                                                        {settings?.tiktokUrl && (
+                                                            <a href={settings.tiktokUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white">
+                                                                <Music2 size={16} />
+                                                            </a>
+                                                        )}
+                                                        {settings?.twitterUrl && (
+                                                            <a href={settings.twitterUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white">
+                                                                <Twitter size={16} />
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                
+                                                {work.originalUrl && work.platform !== 'Original' && (
+                                                    <a href={work.originalUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
+                                                        <span>View original</span>
+                                                        <ExternalLink size={16} className="group-hover:translate-x-1 transition-transform" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Tipping Row */}
+                                    {(settings?.btcAddress || settings?.ethAddress || settings?.solAddress) && (
+                                        <div className="relative flex justify-start pt-2">
+                                            <button 
+                                                onClick={() => setIsTippingOpen(!isTippingOpen)}
+                                                className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 rounded-full transition-colors font-bold text-sm"
+                                            >
+                                                <Coins size={16} />
+                                                Tip Creator
+                                            </button>
+                                            
+                                            {isTippingOpen && document.body && createPortal(
+                                                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                                                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsTippingOpen(false)} />
+                                                    <div className="relative w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+                                                        <h3 className="text-white font-bold text-lg mb-4 flex items-center justify-between">
+                                                            Send to the creator
+                                                            <button onClick={() => setIsTippingOpen(false)} className="text-gray-400 hover:text-white p-2 hover:bg-white/10 rounded-full transition-colors"><X size={18}/></button>
+                                                        </h3>
+                                                        <div className="space-y-3">
+                                                            {settings?.btcAddress && (
+                                                                <div className="flex items-center justify-between p-3 bg-black/40 rounded-xl group border border-white/5 hover:border-white/10 transition-colors">
+                                                                    <span className="text-sm font-mono text-gray-300">Bitcoinアドレス</span>
+                                                                    <button onClick={() => handleCopy(settings.btcAddress, 'BTC')} className="p-2 bg-white/5 hover:bg-white/10 hover:text-white rounded-lg text-gray-400 transition-colors flex items-center gap-2">
+                                                                        {copiedAddress === 'BTC' ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                                                                        <span className="text-xs font-bold">{copiedAddress === 'BTC' ? 'Copied' : 'Copy'}</span>
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                            {settings?.ethAddress && (
+                                                                <div className="flex items-center justify-between p-3 bg-black/40 rounded-xl group border border-white/5 hover:border-white/10 transition-colors">
+                                                                    <span className="text-sm font-mono text-gray-300">Ethereumアドレス</span>
+                                                                    <button onClick={() => handleCopy(settings.ethAddress, 'ETH')} className="p-2 bg-white/5 hover:bg-white/10 hover:text-white rounded-lg text-gray-400 transition-colors flex items-center gap-2">
+                                                                        {copiedAddress === 'ETH' ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                                                                        <span className="text-xs font-bold">{copiedAddress === 'ETH' ? 'Copied' : 'Copy'}</span>
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                            {settings?.solAddress && (
+                                                                <div className="flex items-center justify-between p-3 bg-black/40 rounded-xl group border border-white/5 hover:border-white/10 transition-colors">
+                                                                    <span className="text-sm font-mono text-gray-300">Solanaアドレス</span>
+                                                                    <button onClick={() => handleCopy(settings.solAddress, 'SOL')} className="p-2 bg-white/5 hover:bg-white/10 hover:text-white rounded-lg text-gray-400 transition-colors flex items-center gap-2">
+                                                                        {copiedAddress === 'SOL' ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                                                                        <span className="text-xs font-bold">{copiedAddress === 'SOL' ? 'Copied' : 'Copy'}</span>
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>,
+                                                document.body
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
