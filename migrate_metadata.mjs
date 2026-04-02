@@ -1,7 +1,5 @@
 import { sql } from '@vercel/postgres';
 
-process.env.POSTGRES_URL = "postgresql://neondb_owner:npg_NV5CqRlJBh6S@ep-frosty-mud-a1syy5y6-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
-
 async function main() {
   try {
     // 1. Add description

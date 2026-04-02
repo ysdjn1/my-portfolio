@@ -13,8 +13,29 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "A secret collection of cute girls",
-  description: "A collection of short video content spanning TikTok, Instagram, and other platforms.",
+  title: {
+    template: "%s | CuteGirls.ai",
+    default: "CuteGirls.ai",
+  },
+  description: "TikTokで話題のAI美女ショート動画コレクション",
+  openGraph: {
+    type: "website",
+    siteName: "CuteGirls.ai",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "CuteGirls.ai Collection",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CuteGirls.ai",
+    description: "TikTokで話題のAI美女ショート動画コレクション",
+    images: ["/og-image.jpg"],
+  },
 };
 
 export default function RootLayout({

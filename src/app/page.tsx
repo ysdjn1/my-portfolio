@@ -4,6 +4,11 @@ import { AdCard } from "@/components/grid/AdCard";
 import { DetailModal } from "@/components/modal/DetailModal";
 import { getWorks } from "@/lib/api/works";
 import { Suspense } from "react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "CuteGirls.ai | AI美女ショート動画コレクション",
+};
 
 export default async function Home() {
   const works = await getWorks();
