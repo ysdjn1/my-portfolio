@@ -15,9 +15,6 @@ export function DetailModal() {
     const [isOpen, setIsOpen] = useState(false);
     const [work, setWork] = useState<WorkItem | null>(null);
     const [loading, setLoading] = useState(false);
-    const [deleting, setDeleting] = useState(false);
-
-    const [toggling, setToggling] = useState(false);
 
     // Sync state with URL Param
     useEffect(() => {
@@ -53,58 +50,29 @@ export function DetailModal() {
         router.push(pathname || '/', { scroll: false });
     };
 
-    const handleToggleVisibility = async () => {
-        if (!workId || !work) return;
-
-        setToggling(true);
-        try {
-            const res = await fetch(`/api/works/${workId}/visibility`, {
-                method: 'PATCH',
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                // Update local work state to reflect new visibility immediately
-                setWork({ ...work, isPublic: data.isPublic });
-                // Force router to refresh so the background grid updates without full page reload
-                router.refresh();
-            } else {
-                alert('表示ステータスの切り替えに失敗しました');
-            }
-        } catch (err) {
-            console.error('Failed to toggle visibility:', err);
-            alert('エラーが発生しました');
-        } finally {
-            setToggling(false);
-        }
-    };
-
-    const handleDelete = async () => {
-        if (!workId) return;
+    const handleShare = async () => {
+        if (!work) return;
+        const shareUrl = window.location.href;
         
-        const confirmed = window.confirm('本当にこの動画を削除しますか？\n（サムネイルや動画ファイルも完全に削除されます）');
-        if (!confirmed) return;
-
-        setDeleting(true);
-        try {
-            const res = await fetch(`/api/works/${workId}`, {
-                method: 'DELETE',
-            });
-
-            if (res.ok) {
-                // Close modal and refresh the current page to update the grid
-                setIsOpen(false);
-                router.push(pathname || '/', { scroll: false });
-                router.refresh();
-            } else {
-                const data = await res.json();
-                alert(`削除に失敗しました: ${data.error || '不明なエラー'}`);
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: work.title,
+                    url: shareUrl,
+                });
+            } catch (err: any) {
+                if (err.name !== 'AbortError') {
+                    console.error('Share failed:', err);
+                }
             }
-        } catch (error) {
-            console.error('Failed to delete work:', error);
-            alert('削除処理中にエラーが発生しました');
-        } finally {
-            setDeleting(false);
+        } else {
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                alert('リンクをクリップボードにコピーしました');
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                alert('クリップボードへのコピーに失敗しました');
+            }
         }
     };
 
@@ -186,10 +154,8 @@ export function DetailModal() {
                             {work.title}
                         </h2>
 
-                        <p className="text-gray-400 leading-relaxed mb-6">
-                            This is a sample description for the video. In a real application, this would come from the database metadata.
-                            <br /><br />
-                            Created using: Premiere Pro, After Effects.
+                        <p className="text-gray-400 leading-relaxed mb-6 whitespace-pre-wrap">
+                            {work.description || 'No description available.'}
                         </p>
 
                         {/* Actions */}
@@ -202,53 +168,24 @@ export function DetailModal() {
                                         <span className="text-xl font-mono text-white capitalize">
                                             {work.platform}
                                         </span>
-                                        <a href="#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-                                            <span>View original</span>
-                                            <ExternalLink size={16} className="group-hover:translate-x-1 transition-transform" />
-                                        </a>
+                                        {work.originalUrl && (
+                                            <a href={work.originalUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
+                                                <span>View original</span>
+                                                <ExternalLink size={16} className="group-hover:translate-x-1 transition-transform" />
+                                            </a>
+                                        )}
                                     </div>
                                 </div>
                             )}
 
                             <div className="flex gap-2">
-                                <button className="flex-1 py-3 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
+                                <button
+                                    onClick={handleShare}
+                                    className="flex-1 py-3 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                                >
                                     <Share2 size={20} />
                                     Share
                                 </button>
-                                
-                                {isAdminUser && (
-                                    <>
-                                        <button 
-                                            onClick={handleToggleVisibility}
-                                            disabled={toggling}
-                                            className={cn(
-                                                "px-4 py-3 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50",
-                                                work.isPublic 
-                                                    ? "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20" 
-                                                    : "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20"
-                                            )}
-                                            title={work.isPublic ? "Make Private" : "Make Public"}
-                                        >
-                                            {toggling ? (
-                                                <Loader2 size={20} className="animate-spin" />
-                                            ) : work.isPublic ? (
-                                                <Eye size={20} />
-                                            ) : (
-                                                <EyeOff size={20} />
-                                            )}
-                                            <span className="hidden sm:inline">{work.isPublic ? "Public" : "Private"}</span>
-                                        </button>
-
-                                        <button 
-                                            onClick={handleDelete}
-                                            disabled={deleting}
-                                            className="px-4 py-3 bg-red-500/10 text-red-500 font-bold rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                                            title="Delete Video"
-                                        >
-                                            {deleting ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} />}
-                                        </button>
-                                    </>
-                                )}
                             </div>
                         </div>
                     </div>

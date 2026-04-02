@@ -3,10 +3,17 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export function UploadForm() {
     const router = useRouter();
     const [file, setFile] = useState<File | null>(null);
+    const [workType, setWorkType] = useState<'work' | 'ad'>('work');
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [platform, setPlatform] = useState('tiktok');
+    const [customPlatform, setCustomPlatform] = useState('');
+    const [originalUrl, setOriginalUrl] = useState('');
     const [externalUrl, setExternalUrl] = useState('');
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -19,11 +26,16 @@ export function UploadForm() {
     };
 
     const handleUpload = async () => {
-        if (!file) return;
+        if (!file || !title.trim()) {
+            alert('File and Title are required.');
+            return;
+        }
 
         setUploading(true);
         setProgress(0);
         setResult(null);
+
+        const finalPlatform = platform === 'Other' ? customPlatform : platform;
 
         try {
             // 1. Get presigned URL
@@ -78,7 +90,12 @@ export function UploadForm() {
                 body: JSON.stringify({
                     fileId,
                     publicUrl,
-                    externalUrl: externalUrl.trim(),
+                    type: workType,
+                    title: title.trim(),
+                    description: workType === 'work' ? description.trim() : '',
+                    platform: workType === 'work' ? finalPlatform.trim() : '',
+                    originalUrl: workType === 'work' ? originalUrl.trim() : '',
+                    externalUrl: workType === 'ad' ? externalUrl.trim() : '',
                 })
             });
 
@@ -98,6 +115,10 @@ export function UploadForm() {
             
             // Clear inputs
             setFile(null);
+            setTitle('');
+            setDescription('');
+            setOriginalUrl('');
+            setCustomPlatform('');
             setExternalUrl('');
             const input = document.getElementById('video-upload-input') as HTMLInputElement;
             if (input) input.value = '';
@@ -123,16 +144,102 @@ export function UploadForm() {
             </p>
 
             <div className="space-y-4">
+                {/* Type Selection */}
+                <div className="flex gap-2 p-1 bg-gray-900 rounded-xl mb-6 border border-gray-700">
+                    <button
+                        className={cn("flex-1 py-3 rounded-lg font-medium transition-colors", workType === 'work' ? "bg-white text-black" : "text-gray-400 hover:text-white")}
+                        onClick={() => setWorkType('work')}
+                    >
+                        通常動画 (Regular Video)
+                    </button>
+                    <button
+                        className={cn("flex-1 py-3 rounded-lg font-medium transition-colors", workType === 'ad' ? "bg-white text-black" : "text-gray-400 hover:text-white")}
+                        onClick={() => setWorkType('ad')}
+                    >
+                        広告バナー (Ad Banner)
+                    </button>
+                </div>
+
+                {/* Common Field */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">External Link URL (Optional)</label>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Title <span className="text-red-500">*</span></label>
                     <input
-                        type="url"
-                        value={externalUrl}
-                        onChange={(e) => setExternalUrl(e.target.value)}
-                        placeholder="https://example.com"
+                        type="text"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="My awesome video"
                         className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-colors"
                     />
                 </div>
+
+                {/* Work Specific Fields */}
+                {workType === 'work' && (
+                    <>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-2">Description</label>
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Describe the video..."
+                                rows={3}
+                                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-colors"
+                            />
+                        </div>
+                        <div className="flex gap-4">
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Platform</label>
+                                <select 
+                                    value={platform}
+                                    onChange={(e) => setPlatform(e.target.value)}
+                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-colors"
+                                >
+                                    <option value="TikTok">TikTok</option>
+                                    <option value="YouTube">YouTube</option>
+                                    <option value="X">X (Twitter)</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="Other">その他</option>
+                                </select>
+                            </div>
+                            {platform === 'Other' && (
+                                <div className="flex-1 animate-in fade-in">
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">Custom Platform</label>
+                                    <input
+                                        type="text"
+                                        value={customPlatform}
+                                        onChange={(e) => setCustomPlatform(e.target.value)}
+                                        placeholder="Vimeo, Facebook, etc."
+                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-colors"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-2">Original SNS URL</label>
+                            <input
+                                type="url"
+                                value={originalUrl}
+                                onChange={(e) => setOriginalUrl(e.target.value)}
+                                placeholder="https://tiktok.com/..."
+                                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-colors"
+                            />
+                        </div>
+                    </>
+                )}
+
+                {/* Ad Specific Fields */}
+                {workType === 'ad' && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">External Link URL</label>
+                        <input
+                            type="url"
+                            value={externalUrl}
+                            onChange={(e) => setExternalUrl(e.target.value)}
+                            placeholder="https://example.com/shop"
+                            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-colors"
+                        />
+                    </div>
+                )}
+
 
                 <div className="border border-dashed border-gray-700 rounded-xl p-8 flex flex-col items-center gap-4 bg-gray-900/50">
                 <input

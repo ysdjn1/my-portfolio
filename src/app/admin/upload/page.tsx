@@ -31,7 +31,7 @@ export default async function UploadPage() {
                         <p className="text-gray-400 mt-1">Manage visibility and delete uploaded videos.</p>
                     </div>
 
-                    <AdminVideoList works={works.filter(w => w.type === 'work') as import('@/lib/types').WorkItem[]} />
+                    <AdminVideoList works={works} />
                 </section>
             </div>
 

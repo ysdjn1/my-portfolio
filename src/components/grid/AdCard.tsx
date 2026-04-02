@@ -13,7 +13,7 @@ interface AdCardProps {
 export function AdCard({ item, className }: AdCardProps) {
     return (
         <a
-            href={item.linkUrl}
+            href={item.externalUrl}
             target="_blank"
             rel="noopener noreferrer"
             className={cn(

@@ -2,22 +2,25 @@ export type BaseItem = {
   id: string;
   thumbnailUrl: string;
   aspectRatio: number;
-}
+  isPublic?: boolean;
+};
 
 export type WorkItem = BaseItem & {
   type: 'work';
   title: string;
+  description?: string;
   previewUrl?: string; // WebP Animation
   originalVideoUrl?: string; // MP4 Original
-  platform?: 'tiktok' | 'instagram' | 'youtube';
+  originalUrl?: string; // Link to social media original post
+  platform?: string;
   views?: string;
-  isPublic?: boolean;
   externalUrl?: string; // Optional link to external site
 };
 
 export type AdItem = BaseItem & {
   type: 'ad';
-  linkUrl: string;
+  title: string;
+  externalUrl?: string;
   ctaText?: string; // e.g. "Shop Now"
 };
 

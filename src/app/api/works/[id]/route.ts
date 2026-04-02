@@ -25,6 +25,48 @@ export async function GET(
     }
 }
 
+export async function PATCH(
+    request: NextRequest,
+    context: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await context.params;
+        const body = await request.json();
+        
+        const { title, description, platform, originalUrl, externalUrl, type, isPublic } = body;
+
+        if (!id || !title) {
+            return NextResponse.json({ error: 'Missing id or title' }, { status: 400 });
+        }
+
+        const dbType = type || 'work';
+        const dbIsPublic = isPublic !== false; // Default to true if somehow undefined
+
+        await sql`
+            UPDATE works 
+            SET title = ${title},
+                description = ${description !== undefined ? description : null},
+                platform = ${platform !== undefined ? platform : null},
+                original_url = ${originalUrl !== undefined ? originalUrl : null},
+                external_url = ${externalUrl !== undefined ? externalUrl : null},
+                type = ${dbType},
+                is_public = ${dbIsPublic}
+            WHERE id = ${id}
+        `;
+
+        revalidatePath('/');
+        revalidatePath('/admin/upload');
+
+        return NextResponse.json({ success: true, id });
+    } catch (error) {
+        console.error('Failed to update work:', error);
+        return NextResponse.json(
+            { error: 'Failed to update work' },
+            { status: 500 }
+        );
+    }
+}
+
 export async function DELETE(
     request: NextRequest,
     context: { params: Promise<{ id: string }> }
