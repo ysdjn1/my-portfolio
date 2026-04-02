@@ -5,7 +5,7 @@ export async function getWorks(includePrivate = false): Promise<GridItem[]> {
     try {
         const { rows } = includePrivate 
             ? await sql`SELECT * FROM works ORDER BY created_at DESC`
-            : await sql`SELECT * FROM works WHERE is_public = TRUE OR is_public IS NULL ORDER BY created_at DESC`;
+            : await sql`SELECT * FROM works WHERE (is_public = TRUE OR is_public IS NULL) AND original_video_url IS NOT NULL AND original_video_url != '' ORDER BY created_at DESC`;
         
         return rows.map(row => {
             const base = {
