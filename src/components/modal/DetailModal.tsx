@@ -6,6 +6,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { X, ExternalLink, Heart, Share2, Loader2, Trash2, Eye, EyeOff, Music2, Twitter, Coins, Copy, Check } from 'lucide-react';
 import { WorkItem, SiteSettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { sendGAEvent } from '@next/third-parties/google';
 
 export function DetailModal() {
     const router = useRouter();
@@ -53,6 +54,7 @@ export function DetailModal() {
             if (res.ok) {
                 const data = await res.json();
                 setWork(data);
+                sendGAEvent({ event: 'view_video', video_id: data.id, platform: data.platform });
             }
         } catch (error) {
             console.error('Failed to load work:', error);
@@ -205,12 +207,12 @@ export function DetailModal() {
                                                     )}
                                                     <div className="flex items-center gap-2">
                                                         {settings?.tiktokUrl && (
-                                                            <a href={settings.tiktokUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white">
+                                                            <a href={settings.tiktokUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white" onClick={() => sendGAEvent({ event: 'click_sns', platform: 'TikTok' })}>
                                                                 <Music2 size={16} />
                                                             </a>
                                                         )}
                                                         {settings?.twitterUrl && (
-                                                            <a href={settings.twitterUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white">
+                                                            <a href={settings.twitterUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white" onClick={() => sendGAEvent({ event: 'click_sns', platform: 'Twitter' })}>
                                                                 <Twitter size={16} />
                                                             </a>
                                                         )}
@@ -218,7 +220,7 @@ export function DetailModal() {
                                                 </div>
                                                 
                                                 {work.originalUrl && work.platform !== 'Original' && (
-                                                    <a href={work.originalUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
+                                                    <a href={work.originalUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors" onClick={() => sendGAEvent({ event: 'click_sns', platform: work.platform })}>
                                                         <span>View original</span>
                                                         <ExternalLink size={16} className="group-hover:translate-x-1 transition-transform" />
                                                     </a>
@@ -231,7 +233,12 @@ export function DetailModal() {
                                     {(settings?.btcAddress || settings?.ethAddress || settings?.solAddress) && (
                                         <div className="relative flex justify-start pt-2">
                                             <button 
-                                                onClick={() => setIsTippingOpen(!isTippingOpen)}
+                                                onClick={() => {
+                                                    setIsTippingOpen(!isTippingOpen);
+                                                    if (!isTippingOpen && work) {
+                                                        sendGAEvent({ event: 'click_tip', video_id: work.id });
+                                                    }
+                                                }}
                                                 className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 rounded-full transition-colors font-bold text-sm"
                                             >
                                                 <Coins size={16} />
