@@ -51,7 +51,7 @@ export function DetailModal() {
     useEffect(() => {
         if (isOpen && work) {
             console.log('GA Event Fired:', 'view_video', work.id);
-            sendGAEvent({ event: 'view_video', video_id: work.id, platform: work.platform });
+            sendGAEvent('event', 'view_video', { video_id: work.id, platform: work.platform });
         }
     }, [isOpen, work?.id]);
 
@@ -216,7 +216,7 @@ export function DetailModal() {
                                                         {settings?.tiktokUrl && (
                                                             <a href={settings.tiktokUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white" onClick={() => {
                                                                 console.log('GA Event Fired:', 'click_sns', 'TikTok');
-                                                                sendGAEvent({ event: 'click_sns', platform: 'TikTok' });
+                                                                sendGAEvent('event', 'click_sns', { platform: 'TikTok' });
                                                             }}>
                                                                 <Music2 size={16} />
                                                             </a>
@@ -224,7 +224,7 @@ export function DetailModal() {
                                                         {settings?.twitterUrl && (
                                                             <a href={settings.twitterUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white" onClick={() => {
                                                                 console.log('GA Event Fired:', 'click_sns', 'Twitter');
-                                                                sendGAEvent({ event: 'click_sns', platform: 'Twitter' });
+                                                                sendGAEvent('event', 'click_sns', { platform: 'Twitter' });
                                                             }}>
                                                                 <Twitter size={16} />
                                                             </a>
@@ -235,7 +235,7 @@ export function DetailModal() {
                                                 {work.originalUrl && work.platform !== 'Original' && (
                                                     <a href={work.originalUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors" onClick={() => {
                                                         console.log('GA Event Fired:', 'click_sns', work.platform);
-                                                        sendGAEvent({ event: 'click_sns', platform: work.platform });
+                                                        sendGAEvent('event', 'click_sns', { platform: work.platform });
                                                     }}>
                                                         <span>View original</span>
                                                         <ExternalLink size={16} className="group-hover:translate-x-1 transition-transform" />
@@ -252,7 +252,7 @@ export function DetailModal() {
                                                 onClick={() => {
                                                     if (!isTippingOpen && work) {
                                                         console.log('GA Event Fired:', 'click_tip');
-                                                        sendGAEvent({ event: 'click_tip', video_id: work.id });
+                                                        sendGAEvent('event', 'click_tip', { video_id: work.id });
                                                     }
                                                     setIsTippingOpen(!isTippingOpen);
                                                 }}
