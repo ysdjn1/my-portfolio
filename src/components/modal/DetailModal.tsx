@@ -47,6 +47,14 @@ export function DetailModal() {
         }
     }, [workId]);
 
+    // Fire GA event when modal is open and work data is ready
+    useEffect(() => {
+        if (isOpen && work) {
+            console.log('GA Event Fired:', 'view_video', work.id);
+            sendGAEvent({ event: 'view_video', value: work.id, video_id: work.id, platform: work.platform });
+        }
+    }, [isOpen, work?.id]);
+
     const fetchWork = async (id: string) => {
         setLoading(true);
         try {
@@ -54,7 +62,6 @@ export function DetailModal() {
             if (res.ok) {
                 const data = await res.json();
                 setWork(data);
-                sendGAEvent({ event: 'view_video', video_id: data.id, platform: data.platform });
             }
         } catch (error) {
             console.error('Failed to load work:', error);
@@ -207,12 +214,18 @@ export function DetailModal() {
                                                     )}
                                                     <div className="flex items-center gap-2">
                                                         {settings?.tiktokUrl && (
-                                                            <a href={settings.tiktokUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white" onClick={() => sendGAEvent({ event: 'click_sns', platform: 'TikTok' })}>
+                                                            <a href={settings.tiktokUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white" onClick={() => {
+                                                                console.log('GA Event Fired:', 'click_sns', 'TikTok');
+                                                                sendGAEvent({ event: 'click_sns', platform: 'TikTok' });
+                                                            }}>
                                                                 <Music2 size={16} />
                                                             </a>
                                                         )}
                                                         {settings?.twitterUrl && (
-                                                            <a href={settings.twitterUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white" onClick={() => sendGAEvent({ event: 'click_sns', platform: 'Twitter' })}>
+                                                            <a href={settings.twitterUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white" onClick={() => {
+                                                                console.log('GA Event Fired:', 'click_sns', 'Twitter');
+                                                                sendGAEvent({ event: 'click_sns', platform: 'Twitter' });
+                                                            }}>
                                                                 <Twitter size={16} />
                                                             </a>
                                                         )}
@@ -220,7 +233,10 @@ export function DetailModal() {
                                                 </div>
                                                 
                                                 {work.originalUrl && work.platform !== 'Original' && (
-                                                    <a href={work.originalUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors" onClick={() => sendGAEvent({ event: 'click_sns', platform: work.platform })}>
+                                                    <a href={work.originalUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors" onClick={() => {
+                                                        console.log('GA Event Fired:', 'click_sns', work.platform);
+                                                        sendGAEvent({ event: 'click_sns', platform: work.platform });
+                                                    }}>
                                                         <span>View original</span>
                                                         <ExternalLink size={16} className="group-hover:translate-x-1 transition-transform" />
                                                     </a>
@@ -234,10 +250,11 @@ export function DetailModal() {
                                         <div className="relative flex justify-start pt-2">
                                             <button 
                                                 onClick={() => {
-                                                    setIsTippingOpen(!isTippingOpen);
                                                     if (!isTippingOpen && work) {
-                                                        sendGAEvent({ event: 'click_tip', video_id: work.id });
+                                                        console.log('GA Event Fired:', 'click_tip');
+                                                        sendGAEvent({ event: 'click_tip', value: work.id, video_id: work.id });
                                                     }
+                                                    setIsTippingOpen(!isTippingOpen);
                                                 }}
                                                 className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 rounded-full transition-colors font-bold text-sm"
                                             >
