@@ -51,7 +51,7 @@ export function DetailModal() {
     useEffect(() => {
         if (isOpen && work) {
             console.log('GA Event Fired:', 'view_video', work.id);
-            sendGAEvent({ event: 'view_video', value: work.id, video_id: work.id, platform: work.platform });
+            sendGAEvent({ event: 'view_video', video_id: work.id, platform: work.platform });
         }
     }, [isOpen, work?.id]);
 
@@ -252,7 +252,7 @@ export function DetailModal() {
                                                 onClick={() => {
                                                     if (!isTippingOpen && work) {
                                                         console.log('GA Event Fired:', 'click_tip');
-                                                        sendGAEvent({ event: 'click_tip', value: work.id, video_id: work.id });
+                                                        sendGAEvent({ event: 'click_tip', video_id: work.id });
                                                     }
                                                     setIsTippingOpen(!isTippingOpen);
                                                 }}
