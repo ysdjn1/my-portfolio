@@ -50,7 +50,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
-        {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalytics gaId="G-K77V7SJH28" />}
+        <GoogleAnalytics gaId="G-K77V7SJH28" />
       </body>
     </html>
   );
