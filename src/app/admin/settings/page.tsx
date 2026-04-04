@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { SiteSettings } from '@/lib/types';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 export default function SettingsPage() {
     const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -179,6 +180,13 @@ export default function SettingsPage() {
                         {saving ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />}
                         {saving ? 'Saving...' : 'Save Settings'}
                     </button>
+
+                    <div className="flex justify-center pt-2">
+                        <Link href="/admin/upload" className="inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors">
+                            <ArrowLeft className="w-4 h-4" />
+                            <span className="text-sm font-medium">アップロード画面に戻る</span>
+                        </Link>
+                    </div>
                 </form>
             </div>
         </main>
